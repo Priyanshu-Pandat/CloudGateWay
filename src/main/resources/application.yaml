@@ -1,0 +1,68 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: API-GATEWAY
+
+  config:
+    import: configserver:http://localhost:9296
+
+
+    ##****** Configuration for the API-GATEWAY ******///
+    ##  form this configuration we can get the all services from the API-GATEWAY on port 9090
+
+
+  cloud:
+    gateway:
+      routes:
+        - id: ORDER-SERVICE
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/order/**
+#  ///////****** from here the Circuit Breaker Configuration *****///////
+#  yha se leke
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: ORDER-SERVICE
+                fallbackUri: forward:/orderServiceFallBack
+                # yha tak esi hi sbi api ke liye alg alg configurations h
+                #redis ki Configuration
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 1  # Number of requests per second
+                  burstCapacity: 1  # Number of requests allowed in a burst
+
+
+        - id: PRODUCT-SERVICE
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/product/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: PRODUCT-SERVICE
+                fallbackUri: forward:/productServiceFallBack
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 1  # Number of requests per second
+                  burstCapacity: 1  # Number of requests allowed in a burst
+
+        - id: PAYMENT-SERVICE
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/payment/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: PAYMENT-SERVICE
+                fallbackUri: forward:/paymentServiceFallBack
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 1  # Number of requests per second
+                  burstCapacity: 1  # Number of requests allowed in a burst
+
